@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Investor Update Generator — Esther Istifanus</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0b0d; --surface: #111318; --surface2: #181c22;
+    --border: #23272f; --border2: #2e3440;
+    --accent: #c8f050; --accent2: #50c8f0; --accent3: #f0a050;
+    --text: #e8eaed; --muted: #6b7280; --muted2: #3d4451;
+    --serif: 'Cormorant Garamond', serif;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:var(--sans); font-weight:300; min-height:100vh; }
+
+  body::after {
+    content:''; position:fixed; inset:0;
+    background-image: linear-gradient(rgba(200,240,80,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(200,240,80,0.015) 1px, transparent 1px);
+    background-size:60px 60px; pointer-events:none; z-index:0;
+  }
+
+  /* NAV */
+  nav {
+    position:sticky; top:0; z-index:100;
+    display:flex; justify-content:space-between; align-items:center;
+    padding:20px 48px;
+    background:rgba(10,11,13,0.92); border-bottom:1px solid var(--border);
+    backdrop-filter:blur(12px);
+  }
+  .nav-back {
+    font-family:var(--mono); font-size:11px; letter-spacing:0.1em;
+    text-transform:uppercase; color:var(--muted); text-decoration:none;
+    display:flex; align-items:center; gap:8px; transition:color 0.2s;
+  }
+  .nav-back:hover { color:var(--accent); }
+  .nav-title { font-family:var(--serif); font-size:18px; color:var(--text); }
+  .nav-tag {
+    font-family:var(--mono); font-size:10px; letter-spacing:0.1em;
+    text-transform:uppercase; color:var(--accent);
+    border:1px solid rgba(200,240,80,0.3); padding:5px 12px; border-radius:2px;
+  }
+
+  /* PAGE LAYOUT */
+  .page { max-width:1100px; margin:0 auto; padding:0 48px 80px; position:relative; z-index:1; }
+
+  /* HERO */
+  .hero { padding:64px 0 48px; border-bottom:1px solid var(--border); margin-bottom:56px; }
+  .eyebrow {
+    font-family:var(--mono); font-size:10px; letter-spacing:0.15em;
+    text-transform:uppercase; color:var(--accent); margin-bottom:20px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::before { content:''; width:28px; height:1px; background:var(--accent); }
+  .hero h1 { font-family:var(--serif); font-size:clamp(40px,6vw,72px); font-weight:300; line-height:1.05; letter-spacing:-0.02em; }
+  .hero h1 em { font-style:italic; color:var(--accent); }
+  .hero-desc { margin-top:20px; font-size:15px; line-height:1.7; color:var(--muted); max-width:600px; }
+  .hero-meta { margin-top:32px; display:flex; gap:40px; flex-wrap:wrap; }
+  .meta-item { }
+  .meta-val { font-family:var(--serif); font-size:26px; font-weight:300; display:block; color:var(--text); }
+  .meta-lbl { font-family:var(--mono); font-size:9px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-top:4px; display:block; }
+
+  /* MAIN GRID */
+  .main-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:40px; }
+
+  /* CARDS */
+  .card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:8px; padding:32px; position:relative; overflow:hidden;
+  }
+  .card-label {
+    font-family:var(--mono); font-size:9px; letter-spacing:0.12em;
+    text-transform:uppercase; color:var(--muted); margin-bottom:16px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .live-dot { width:6px; height:6px; border-radius:50%; background:var(--accent); animation:pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+
+  /* INPUT PANEL */
+  .config-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+  select {
+    width:100%; font-size:12px; padding:9px 12px; font-family:var(--mono);
+    background:var(--surface2); color:var(--text);
+    border:1px solid var(--border2); border-radius:4px; cursor:pointer;
+    transition:border-color 0.2s;
+  }
+  select:focus { outline:none; border-color:var(--accent); }
+  textarea {
+    width:100%; min-height:220px; font-size:12px; line-height:1.65;
+    font-family:var(--mono); background:var(--surface2); color:var(--text);
+    border:1px solid var(--border2); border-radius:4px; padding:14px;
+    resize:vertical; transition:border-color 0.2s;
+  }
+  textarea:focus { outline:none; border-color:var(--accent); }
+  .hint { font-family:var(--mono); font-size:10px; color:var(--muted); margin-top:8px; line-height:1.5; }
+  .gen-btn {
+    width:100%; margin-top:14px; padding:12px;
+    font-family:var(--mono); font-size:12px; letter-spacing:0.08em;
+    text-transform:uppercase; background:transparent;
+    border:1px solid var(--accent); border-radius:4px;
+    color:var(--accent); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    transition:background 0.2s, color 0.2s;
+  }
+  .gen-btn:hover:not(:disabled) { background:var(--accent); color:var(--bg); }
+  .gen-btn:disabled { opacity:0.45; cursor:not-allowed; }
+
+  /* OUTPUT PANEL */
+  .subject-wrap { margin-bottom:16px; }
+  .subject-lbl { font-family:var(--mono); font-size:9px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+  .subject-box {
+    padding:10px 14px; background:var(--surface2);
+    border-left:2px solid var(--accent); border-radius:0 4px 4px 0;
+    font-size:13px; font-weight:500; color:var(--text);
+    border-top:1px solid var(--border); border-right:1px solid var(--border); border-bottom:1px solid var(--border);
+  }
+  .output-body {
+    min-height:220px; font-size:12px; line-height:1.75;
+    font-family:var(--mono); color:var(--text); white-space:pre-wrap;
+  }
+  .output-placeholder { color:var(--muted); font-style:italic; }
+  .copy-btn {
+    position:absolute; top:16px; right:16px;
+    font-family:var(--mono); font-size:10px; letter-spacing:0.06em;
+    padding:4px 10px; border:1px solid var(--border2); border-radius:3px;
+    background:transparent; color:var(--muted); cursor:pointer;
+    transition:border-color 0.2s, color 0.2s;
+  }
+  .copy-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+  /* STATS STRIP */
+  .stats-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:40px; }
+  .stat-chip { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:16px 20px; }
+  .stat-chip-val { font-family:var(--serif); font-size:26px; font-weight:300; color:var(--text); display:block; }
+  .stat-chip-lbl { font-family:var(--mono); font-size:9px; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); display:block; margin-top:4px; }
+
+  /* TAGS ROW */
+  .tags-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+  .tag { font-family:var(--mono); font-size:10px; color:var(--accent); background:rgba(200,240,80,0.07); padding:3px 10px; border-radius:2px; }
+
+  /* ARCHITECTURE */
+  .arch-section { margin-top:56px; padding-top:48px; border-top:1px solid var(--border); }
+  .section-label { font-family:var(--mono); font-size:10px; letter-spacing:0.15em; text-transform:uppercase; color:var(--accent); margin-bottom:12px; display:flex; align-items:center; gap:10px; }
+  .section-label::after { content:''; width:40px; height:1px; background:var(--accent); opacity:0.4; }
+  .arch-title { font-family:var(--serif); font-size:36px; font-weight:300; line-height:1.1; margin-bottom:16px; }
+  .arch-title em { font-style:italic; color:var(--accent); }
+  .arch-desc { font-size:14px; line-height:1.7; color:var(--muted); max-width:600px; margin-bottom:40px; }
+
+  .pipeline { display:flex; flex-direction:column; gap:0; }
+  .pipe-step {
+    display:grid; grid-template-columns:48px 1fr;
+    gap:0; position:relative;
+  }
+  .pipe-step:not(:last-child) .pipe-left::after {
+    content:''; position:absolute; left:23px; top:48px; bottom:0;
+    width:1px; background:var(--border2); z-index:0;
+  }
+  .pipe-left { position:relative; display:flex; flex-direction:column; align-items:center; padding-top:12px; }
+  .pipe-num {
+    width:36px; height:36px; border-radius:50%;
+    background:var(--surface2); border:1px solid var(--border2);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--mono); font-size:11px; color:var(--accent);
+    position:relative; z-index:1; flex-shrink:0;
+  }
+  .pipe-right { padding:10px 0 36px 24px; }
+  .pipe-title { font-size:15px; font-weight:500; color:var(--text); margin-bottom:6px; }
+  .pipe-desc { font-size:13px; line-height:1.6; color:var(--muted); }
+  .pipe-badge {
+    display:inline-block; margin-top:8px; font-family:var(--mono); font-size:9px;
+    letter-spacing:0.08em; text-transform:uppercase;
+    padding:3px 8px; border-radius:2px;
+  }
+  .badge-green { background:rgba(200,240,80,0.08); color:var(--accent); }
+  .badge-blue  { background:rgba(80,200,240,0.08); color:var(--accent2); }
+  .badge-amber { background:rgba(240,160,80,0.08); color:var(--accent3); }
+
+  /* SPINNER */
+  .spinner { width:12px; height:12px; border:1.5px solid rgba(200,240,80,0.3); border-top-color:var(--accent); border-radius:50%; animation:spin 0.7s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* FOOTER */
+  .page-footer {
+    margin-top:80px; padding-top:32px; border-top:1px solid var(--border);
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;
+  }
+  .page-footer span { font-family:var(--mono); font-size:10px; color:var(--muted2); }
+
+  @media (max-width:768px) {
+    nav { padding:16px 20px; }
+    .page { padding:0 20px 60px; }
+    .main-grid { grid-template-columns:1fr; }
+    .stats-strip { grid-template-columns:1fr 1fr; }
+    .hero-meta { gap:24px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-back">← Back to portfolio</a>
+  <span class="nav-title">Investor Update Generator</span>
+  <span class="nav-tag">AI Automation</span>
+</nav>
+
+<div class="page">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="eyebrow">Project 02 · AI Automation</div>
+    <h1>Investor Update<br><em>Generator</em></h1>
+    <p class="hero-desc">
+      A working AI automation tool that converts raw operational notes into polished
+      investor update emails in under 6 seconds. Built with the Claude API — configurable
+      tone, period, and audience. Demonstrates end-to-end prompt engineering and
+      AI workflow design for startup operations.
+    </p>
+    <div class="hero-meta">
+      <div class="meta-item"><span class="meta-val">~4s</span><span class="meta-lbl">avg generation</span></div>
+      <div class="meta-item"><span class="meta-val">4</span><span class="meta-lbl">tone configs</span></div>
+      <div class="meta-item"><span class="meta-val">7</span><span class="meta-lbl">pipeline stages</span></div>
+      <div class="meta-item"><span class="meta-val">Live</span><span class="meta-lbl">working prototype</span></div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-strip">
+    <div class="stat-chip"><span class="stat-chip-val" id="emails-gen">0</span><span class="stat-chip-lbl">emails generated</span></div>
+    <div class="stat-chip"><span class="stat-chip-val" id="avg-time">—</span><span class="stat-chip-lbl">avg generation time</span></div>
+    <div class="stat-chip"><span class="stat-chip-val" id="last-tone">—</span><span class="stat-chip-lbl">last tone used</span></div>
+  </div>
+
+  <!-- GENERATOR -->
+  <div class="main-grid">
+
+    <!-- INPUT -->
+    <div class="card">
+      <div class="card-label"><span class="live-dot"></span>Raw ops notes input</div>
+      <div class="config-row">
+        <select id="tone">
+          <option value="professional">Professional</option>
+          <option value="warm and conversational">Warm & conversational</option>
+          <option value="concise and data-driven">Concise & data-driven</option>
+          <option value="candid and transparent">Candid & transparent</option>
+        </select>
+        <select id="period">
+          <option value="monthly">Monthly update</option>
+          <option value="quarterly">Quarterly update</option>
+          <option value="weekly">Weekly update</option>
+          <option value="ad-hoc milestone">Milestone update</option>
+        </select>
+      </div>
+      <textarea id="notes" placeholder="Paste your raw ops notes here. For example:
+
+Revenue this month: ₦1.4M (up from ₦1.1M last month)
+Units sold: 155 paint units
+Plastic processed: 11,067 kg
+Team: hired 2 new ops staff this month
+Challenges: supplier delivery delays pushed back 2 orders
+Next month: targeting ₦1.8M, expanding to 3 new distribution points
+Ask: intro to logistics-focused VCs in West Africa"></textarea>
+      <p class="hint">Include metrics, wins, blockers, and your ask. The more specific, the better the output.</p>
+      <button class="gen-btn" id="gen-btn" onclick="generate()">
+        <span id="btn-label">Generate investor update</span>
+        <span style="font-size:11px;opacity:0.6">↗</span>
+      </button>
+      <div class="tags-row">
+        <span class="tag">Claude API</span>
+        <span class="tag">Prompt Engineering</span>
+        <span class="tag">JavaScript</span>
+        <span class="tag">Startup Ops</span>
+      </div>
+    </div>
+
+    <!-- OUTPUT -->
+    <div class="card" style="position:relative">
+      <div class="card-label"><span class="live-dot" style="background:var(--accent2)"></span>Generated email</div>
+      <button class="copy-btn" id="copy-btn" onclick="copyOutput()" style="display:none">Copy</button>
+      <div id="subject-wrap" class="subject-wrap" style="display:none">
+        <div class="subject-lbl">Subject line</div>
+        <div class="subject-box" id="subject-out"></div>
+      </div>
+      <div class="output-body" id="output">
+        <span class="output-placeholder">Your generated investor update will appear here.
+
+Paste your ops notes on the left and hit generate — the Claude API will draft a polished email in seconds.</span>
+      </div>
+      <div class="tags-row" id="meta-tags"></div>
+    </div>
+  </div>
+
+  <!-- ARCHITECTURE SECTION -->
+  <div class="arch-section">
+    <div class="section-label">How it works</div>
+    <h2 class="arch-title">Automation<br><em>Architecture</em></h2>
+    <p class="arch-desc">
+      Seven stages from raw input to structured output. Each stage is explicit and auditable —
+      this is the architecture you'd present to a CTO or technical co-founder.
+    </p>
+
+    <div class="pipeline">
+      <div class="pipe-step">
+        <div class="pipe-left"><div class="pipe-num">01</div></div>
+        <div class="pipe-right">
+          <div class="pipe-title">Trigger — monthly ops cycle ends</div>
+          <div class="pipe-desc">The ops lead decides it's time to send an investor update. This can be calendar-triggered (scheduled automation) or manual (on-demand, as in this prototype).</div>
+          <span class="pipe-badge badge-amber">Trigger layer</span>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-left"><div class="pipe-num">02</div></div>
+        <div class="pipe-right">
+          <div class="pipe-title">Input — three data streams collected</div>
+          <div class="pipe-desc">Operational metrics (revenue, units, pipeline), narrative notes (wins, blockers, asks), and configuration parameters (tone, period, audience) are collected as structured inputs.</div>
+          <span class="pipe-badge badge-green">Input layer</span>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-left"><div class="pipe-num">03</div></div>
+        <div class="pipe-right">
+          <div class="pipe-title">Prompt constructor — context injection</div>
+          <div class="pipe-desc">A structured prompt template injects the user's raw notes alongside explicit format rules: lead with the strongest metric, acknowledge challenges, end with one clear ask, stay under 300 words.</div>
+          <span class="pipe-badge badge-green">Processing layer</span>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-left"><div class="pipe-num">04</div></div>
+        <div class="pipe-right">
+          <div class="pipe-title">Input validation — completeness check</div>
+          <div class="pipe-desc">Before calling the API, the system checks that the input contains enough information to generate a useful update. Incomplete inputs prompt the user to fill gaps rather than producing a poor output.</div>
+          <span class="pipe-badge badge-green">Processing layer</span>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-left"><div class="pipe-num">05</div></div>
+        <div class="pipe-right">
+          <div class="pipe-title">Claude API — claude-sonnet-4 generates the draft</div>
+          <div class="pipe-desc">The engineered prompt is sent to Anthropic's Claude API. The model generates a subject line and full email body, structured according to the format rules embedded in the prompt. Average latency: 3–6 seconds.</div>
+          <span class="pipe-badge badge-blue">AI layer · claude-sonnet-4</span>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-left"><div class="pipe-num">06</div></div>
+        <div class="pipe-right">
+          <div class="pipe-title">Response parser — splits subject, body, metadata</div>
+          <div class="pipe-desc">The raw API response is parsed to extract the subject line separately from the email body, and to capture metadata (word count, tone used, generation time) for the analytics strip.</div>
+          <span class="pipe-badge badge-blue">AI layer</span>
+        </div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-left"><div class="pipe-num">07</div></div>
+        <div class="pipe-right">
+          <div class="pipe-title">Outputs — draft email, log, analytics</div>
+          <div class="pipe-desc">Three outputs are produced: the draft email (ready to review and send), an update log entry for the audit trail, and analytics data (tone, word count, generation time) feeding the ops dashboard.</div>
+          <span class="pipe-badge badge-green">Output layer</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="page-footer">
+    <span>Esther Istifanus · Operations Analyst Portfolio · 2025</span>
+    <span>Built with: Claude API · JavaScript · HTML/CSS</span>
+    <a href="index.html" style="font-family:var(--mono);font-size:10px;color:var(--accent);text-decoration:none;letter-spacing:0.06em">← Back to portfolio</a>
+  </div>
+</div>
+
+<script>
+let emailCount = 0, totalTime = 0;
+
+async function generate() {
+  const notes = document.getElementById('notes').value.trim();
+  if (!notes) { alert('Please paste some ops notes first.'); return; }
+
+  const tone = document.getElementById('tone').value;
+  const period = document.getElementById('period').value;
+  const btn = document.getElementById('gen-btn');
+  const output = document.getElementById('output');
+
+  btn.disabled = true;
+  document.getElementById('btn-label').innerHTML = '<span style="display:flex;align-items:center;gap:8px"><span class="spinner"></span>Generating…</span>';
+  document.getElementById('subject-wrap').style.display = 'none';
+  document.getElementById('copy-btn').style.display = 'none';
+  document.getElementById('meta-tags').innerHTML = '';
+  output.innerHTML = '<span class="output-placeholder">Drafting your investor update…</span>';
+
+  const start = Date.now();
+
+  const prompt = `You are an expert startup communications writer. A founder has given you raw operational notes and you need to write a polished investor update email.
+
+Tone: ${tone}
+Update type: ${period}
+
+Raw notes from the founder:
+${notes}
+
+Write a complete investor update email. Format your response EXACTLY as follows:
+
+SUBJECT: [write the subject line here]
+
+[blank line]
+
+[Write the full email body — greeting, structured sections for highlights/metrics, challenges/blockers, upcoming priorities, and a specific ask if mentioned. Sign off professionally. Keep it under 300 words.]
+
+Rules:
+- Lead with the most impressive metric
+- Be specific with numbers — never be vague
+- Acknowledge challenges honestly — investors respect candour
+- End with one clear ask or next step
+- Use bullet points only for metrics, not for the whole email`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await res.json();
+    const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+    const text = data.content?.[0]?.text || '';
+
+    const subjectMatch = text.match(/SUBJECT:\s*(.+)/);
+    const subject = subjectMatch ? subjectMatch[1].trim() : '';
+    const body = text.replace(/SUBJECT:\s*.+\n?/, '').trim();
+
+    if (subject) {
+      document.getElementById('subject-out').textContent = subject;
+      document.getElementById('subject-wrap').style.display = 'block';
+    }
+    output.textContent = body;
+    document.getElementById('copy-btn').style.display = 'inline-block';
+
+    emailCount++;
+    totalTime += parseFloat(elapsed);
+    document.getElementById('emails-gen').textContent = emailCount;
+    document.getElementById('avg-time').textContent = (totalTime / emailCount).toFixed(1) + 's';
+    document.getElementById('last-tone').textContent = tone.split(' ')[0];
+
+    const wordCount = body.split(' ').length;
+    document.getElementById('meta-tags').innerHTML = [
+      period, tone.split(' ')[0], `${wordCount} words`, `${elapsed}s`
+    ].map(t => `<span class="tag">${t}</span>`).join('');
+
+  } catch(err) {
+    output.innerHTML = '<span class="output-placeholder">Error connecting to API. This tool requires the Claude.ai environment to run.</span>';
+  }
+
+  btn.disabled = false;
+  document.getElementById('btn-label').textContent = 'Generate investor update';
+}
+
+function copyOutput() {
+  const subject = document.getElementById('subject-out').textContent;
+  const body = document.getElementById('output').textContent;
+  const full = subject ? `Subject: ${subject}\n\n${body}` : body;
+  navigator.clipboard.writeText(full).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = 'Copied';
+    setTimeout(() => btn.textContent = 'Copy', 1500);
+  });
+}
+</script>
+</body>
+</html>
