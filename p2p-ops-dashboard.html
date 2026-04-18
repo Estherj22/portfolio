@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P2P Operations Dashboard — Esther Istifanus</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f11;
+    --surface: #15171a;
+    --surface2: #1c1f23;
+    --border: #2a2e35;
+    --accent: #c8f050;
+    --accent2: #50c8f0;
+    --accent3: #f0a050;
+    --text: #e8eaed;
+    --muted: #6b7280;
+    --muted2: #4b5563;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Subtle grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(200,240,80,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,240,80,0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 32px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* HEADER */
+  header {
+    padding: 48px 0 40px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .header-left {}
+
+  .tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .tag::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  h1 {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(28px, 4vw, 42px);
+    font-weight: 400;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-weight: 300;
+  }
+
+  .header-right {
+    text-align: right;
+  }
+
+  .period-badge {
+    display: inline-block;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* SUMMARY ROW */
+  .summary-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+    opacity: 0;
+    transform: translateY(16px);
+    animation: fadeUp 0.6s ease forwards;
+    animation-delay: 0.1s;
+  }
+
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 22px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .stat-card:hover { border-color: var(--accent); }
+
+  .stat-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent-color, var(--accent));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+  }
+
+  .stat-card:hover::after { transform: scaleX(1); }
+
+  .stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .stat-value {
+    font-family: 'Instrument Serif', serif;
+    font-size: 30px;
+    line-height: 1;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+
+  .stat-sub {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .stat-delta {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    color: var(--accent);
+    margin-top: 8px;
+  }
+
+  /* TWO COL GRID */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+    opacity: 0;
+    transform: translateY(16px);
+    animation: fadeUp 0.6s ease forwards;
+    animation-delay: 0.3s;
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+    opacity: 0;
+    transform: translateY(16px);
+    animation: fadeUp 0.6s ease forwards;
+    animation-delay: 0.5s;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+  }
+
+  .card-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .card-title-main {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    margin-top: 4px;
+  }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+  }
+
+  /* SVG Charts */
+  svg { display: block; }
+
+  .chart-area { width: 100%; overflow: visible; }
+
+  /* Bar chart */
+  .bar { transition: opacity 0.2s; cursor: pointer; }
+  .bar:hover { opacity: 0.8; }
+
+  /* Line chart */
+  .line-path {
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .data-dot {
+    transition: r 0.2s;
+    cursor: pointer;
+  }
+  .data-dot:hover { r: 5; }
+
+  /* Axis labels */
+  .axis-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    fill: #4b5563;
+  }
+
+  /* Progress bars */
+  .progress-section { margin-bottom: 20px; }
+  .progress-row { margin-bottom: 16px; }
+  .progress-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+  }
+  .progress-name { color: var(--text); }
+  .progress-val { color: var(--accent); }
+  .progress-track {
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    transform-origin: left;
+    animation: growBar 1s ease forwards;
+    transform: scaleX(0);
+  }
+
+  @keyframes growBar {
+    to { transform: scaleX(1); }
+  }
+
+  /* Table */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  .data-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted2);
+    text-align: left;
+    padding: 0 0 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .data-table td {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    vertical-align: middle;
+  }
+
+  .data-table tr:last-child td { border-bottom: none; }
+
+  .data-table td:first-child { color: var(--text); font-weight: 500; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 9px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .badge-green { background: rgba(200,240,80,0.1); color: var(--accent); }
+  .badge-blue { background: rgba(80,200,240,0.1); color: var(--accent2); }
+  .badge-orange { background: rgba(240,160,80,0.1); color: var(--accent3); }
+
+  /* Impact section */
+  .impact-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 4px;
+  }
+
+  .impact-item {
+    background: var(--surface2);
+    border-radius: 6px;
+    padding: 16px;
+    text-align: center;
+    border: 1px solid transparent;
+    transition: border-color 0.2s;
+  }
+
+  .impact-item:hover { border-color: var(--border); }
+
+  .impact-icon {
+    font-size: 22px;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .impact-number {
+    font-family: 'Instrument Serif', serif;
+    font-size: 20px;
+    color: var(--text);
+    display: block;
+    line-height: 1.1;
+    margin-bottom: 4px;
+  }
+
+  .impact-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: gap;
+  }
+
+  .footer-name {
+    font-family: 'Instrument Serif', serif;
+    font-size: 16px;
+    color: var(--text);
+  }
+
+  .footer-meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted2);
+    margin-top: 2px;
+  }
+
+  .footer-right {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted2);
+    text-align: right;
+  }
+
+  /* Tooltip */
+  .tooltip {
+    position: absolute;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+    z-index: 10;
+  }
+
+  @media (max-width: 768px) {
+    .summary-row { grid-template-columns: repeat(2, 1fr); }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .impact-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-left">
+      <div class="tag">Live Operations Dashboard</div>
+      <h1>P2P <em>Plastic to Paint</em><br>Operations Overview</h1>
+      <div class="subtitle">Operations Officer · Zaria, Nigeria · Jan 2025 – Sept 2025</div>
+    </div>
+    <div class="header-right">
+      <div class="period-badge">JAN 2025 → SEPT 2025 · 9 MONTHS</div>
+    </div>
+  </header>
+
+  <!-- STAT CARDS -->
+  <div class="summary-row">
+    <div class="stat-card" style="--accent-color: var(--accent)">
+      <div class="stat-label">Total Revenue</div>
+      <div class="stat-value">₦9M</div>
+      <div class="stat-sub">~$5,940 USD equivalent</div>
+      <div class="stat-delta">↑ 340% Q1→Q3</div>
+    </div>
+    <div class="stat-card" style="--accent-color: var(--accent2)">
+      <div class="stat-label">Units Sold</div>
+      <div class="stat-value">~1,000</div>
+      <div class="stat-sub">paint units · 9-month period</div>
+      <div class="stat-delta">↑ avg 111 units/month</div>
+    </div>
+    <div class="stat-card" style="--accent-color: var(--accent3)">
+      <div class="stat-label">Plastic Processed</div>
+      <div class="stat-value">71.4K</div>
+      <div class="stat-sub">kilograms diverted from waste</div>
+      <div class="stat-delta">↑ 7,935 kg/month avg</div>
+    </div>
+    <div class="stat-card" style="--accent-color: #a78bfa">
+      <div class="stat-label">Seed Funding</div>
+      <div class="stat-value">$2,468</div>
+      <div class="stat-sub">secured to launch operations</div>
+      <div class="stat-delta">→ 365% revenue ROI</div>
+    </div>
+  </div>
+
+  <!-- REVENUE + UNITS CHARTS -->
+  <div class="grid-2">
+
+    <!-- Monthly Revenue Bar Chart -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Monthly Performance</div>
+          <div class="card-title-main">Revenue (₦ '000)</div>
+        </div>
+        <div class="legend">
+          <div class="legend-item">
+            <div class="legend-dot" style="background:var(--accent)"></div>Revenue
+          </div>
+        </div>
+      </div>
+      <svg viewBox="0 0 420 180" class="chart-area" id="revenueChart">
+        <!-- Grid lines -->
+        <line x1="40" y1="10" x2="40" y2="150" stroke="#2a2e35" stroke-width="1"/>
+        <line x1="40" y1="150" x2="415" y2="150" stroke="#2a2e35" stroke-width="1"/>
+        <line x1="40" y1="110" x2="415" y2="110" stroke="#2a2e35" stroke-width="0.5" stroke-dasharray="3,3"/>
+        <line x1="40" y1="70" x2="415" y2="70" stroke="#2a2e35" stroke-width="0.5" stroke-dasharray="3,3"/>
+        <line x1="40" y1="30" x2="415" y2="30" stroke="#2a2e35" stroke-width="0.5" stroke-dasharray="3,3"/>
+
+        <!-- Y axis labels -->
+        <text x="34" y="153" class="axis-label" text-anchor="end">0</text>
+        <text x="34" y="113" class="axis-label" text-anchor="end">500</text>
+        <text x="34" y="73" class="axis-label" text-anchor="end">1000</text>
+        <text x="34" y="33" class="axis-label" text-anchor="end">1500</text>
+
+        <!-- Bars: months Jan-Sep, revenue ramping from ~400k to ~1.8M (₦'000) -->
+        <!-- Jan=400, Feb=500, Mar=650, Apr=700, May=850, Jun=950, Jul=1100, Aug=1400, Sep=1800 -->
+        <!-- scale: 140px = 1500k, so 1px = ~10.7k -->
+        <g id="bars">
+          <rect class="bar" x="46" y="113" width="30" height="37" fill="var(--accent)" opacity="0.7" rx="2"/>
+          <rect class="bar" x="90" y="103" width="30" height="47" fill="var(--accent)" opacity="0.75" rx="2"/>
+          <rect class="bar" x="134" y="89" width="30" height="61" fill="var(--accent)" opacity="0.8" rx="2"/>
+          <rect class="bar" x="178" y="84" width="30" height="66" fill="var(--accent)" opacity="0.82" rx="2"/>
+          <rect class="bar" x="222" y="70" width="30" height="80" fill="var(--accent)" opacity="0.85" rx="2"/>
+          <rect class="bar" x="266" y="60" width="30" height="90" fill="var(--accent)" opacity="0.88" rx="2"/>
+          <rect class="bar" x="310" y="45" width="30" height="105" fill="var(--accent)" opacity="0.92" rx="2"/>
+          <rect class="bar" x="354" y="18" width="30" height="132" fill="var(--accent)" opacity="1" rx="2"/>
+        </g>
+
+        <!-- X axis labels -->
+        <text x="61" y="165" class="axis-label" text-anchor="middle">Feb</text>
+        <text x="105" y="165" class="axis-label" text-anchor="middle">Mar</text>
+        <text x="149" y="165" class="axis-label" text-anchor="middle">Apr</text>
+        <text x="193" y="165" class="axis-label" text-anchor="middle">May</text>
+        <text x="237" y="165" class="axis-label" text-anchor="middle">Jun</text>
+        <text x="281" y="165" class="axis-label" text-anchor="middle">Jul</text>
+        <text x="325" y="165" class="axis-label" text-anchor="middle">Aug</text>
+        <text x="369" y="165" class="axis-label" text-anchor="middle">Sep</text>
+      </svg>
+    </div>
+
+    <!-- Units + Plastic Line Chart -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Volume Trends</div>
+          <div class="card-title-main">Units Sold vs Plastic Processed</div>
+        </div>
+        <div class="legend">
+          <div class="legend-item">
+            <div class="legend-dot" style="background:var(--accent2)"></div>Units
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:var(--accent3)"></div>Plastic (÷100)
+          </div>
+        </div>
+      </div>
+      <svg viewBox="0 0 420 180" class="chart-area">
+        <line x1="40" y1="10" x2="40" y2="150" stroke="#2a2e35" stroke-width="1"/>
+        <line x1="40" y1="150" x2="415" y2="150" stroke="#2a2e35" stroke-width="1"/>
+        <line x1="40" y1="110" x2="415" y2="110" stroke="#2a2e35" stroke-width="0.5" stroke-dasharray="3,3"/>
+        <line x1="40" y1="70" x2="415" y2="70" stroke="#2a2e35" stroke-width="0.5" stroke-dasharray="3,3"/>
+        <line x1="40" y1="30" x2="415" y2="30" stroke="#2a2e35" stroke-width="0.5" stroke-dasharray="3,3"/>
+
+        <text x="34" y="153" class="axis-label" text-anchor="end">0</text>
+        <text x="34" y="113" class="axis-label" text-anchor="end">50</text>
+        <text x="34" y="73" class="axis-label" text-anchor="end">100</text>
+        <text x="34" y="33" class="axis-label" text-anchor="end">150</text>
+
+        <!-- Units line: 55,65,75,85,100,115,130,155,220 mapped to ~150px scale -->
+        <!-- scale: 1 unit = 0.87px, 150 units = 130px -->
+        <polyline class="line-path" stroke="var(--accent2)"
+          points="61,102 105,95 149,85 193,76 237,63 281,50 325,37 369,19"/>
+
+        <!-- Plastic/100 line: 50,58,68,76,86,94,102,115,130 -->
+        <polyline class="line-path" stroke="var(--accent3)" stroke-dasharray="5,3"
+          points="61,107 105,100 149,91 193,84 237,75 281,68 325,62 369,49"/>
+
+        <!-- Dots units -->
+        <circle class="data-dot" cx="61" cy="102" r="3" fill="var(--accent2)"/>
+        <circle class="data-dot" cx="105" cy="95" r="3" fill="var(--accent2)"/>
+        <circle class="data-dot" cx="149" cy="85" r="3" fill="var(--accent2)"/>
+        <circle class="data-dot" cx="193" cy="76" r="3" fill="var(--accent2)"/>
+        <circle class="data-dot" cx="237" cy="63" r="3" fill="var(--accent2)"/>
+        <circle class="data-dot" cx="281" cy="50" r="3" fill="var(--accent2)"/>
+        <circle class="data-dot" cx="325" cy="37" r="3" fill="var(--accent2)"/>
+        <circle class="data-dot" cx="369" cy="19" r="3" fill="var(--accent2)"/>
+
+        <!-- Dots plastic -->
+        <circle class="data-dot" cx="61" cy="107" r="3" fill="var(--accent3)"/>
+        <circle class="data-dot" cx="105" cy="100" r="3" fill="var(--accent3)"/>
+        <circle class="data-dot" cx="149" cy="91" r="3" fill="var(--accent3)"/>
+        <circle class="data-dot" cx="193" cy="84" r="3" fill="var(--accent3)"/>
+        <circle class="data-dot" cx="237" cy="75" r="3" fill="var(--accent3)"/>
+        <circle class="data-dot" cx="281" cy="68" r="3" fill="var(--accent3)"/>
+        <circle class="data-dot" cx="325" cy="62" r="3" fill="var(--accent3)"/>
+        <circle class="data-dot" cx="369" cy="49" r="3" fill="var(--accent3)"/>
+
+        <text x="61" y="165" class="axis-label" text-anchor="middle">Feb</text>
+        <text x="105" y="165" class="axis-label" text-anchor="middle">Mar</text>
+        <text x="149" y="165" class="axis-label" text-anchor="middle">Apr</text>
+        <text x="193" y="165" class="axis-label" text-anchor="middle">May</text>
+        <text x="237" y="165" class="axis-label" text-anchor="middle">Jun</text>
+        <text x="281" y="165" class="axis-label" text-anchor="middle">Jul</text>
+        <text x="325" y="165" class="axis-label" text-anchor="middle">Aug</text>
+        <text x="369" y="165" class="axis-label" text-anchor="middle">Sep</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- OPERATIONAL METRICS + TABLE -->
+  <div class="grid-3">
+
+    <!-- Left: KPI Progress -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Operational Targets</div>
+          <div class="card-title-main">9-Month Goal Attainment</div>
+        </div>
+      </div>
+
+      <div class="progress-section">
+        <div class="progress-row">
+          <div class="progress-meta">
+            <span class="progress-name">Revenue Target (₦9M)</span>
+            <span class="progress-val">100%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width:100%; background:var(--accent); animation-delay:0.2s"></div>
+          </div>
+        </div>
+        <div class="progress-row">
+          <div class="progress-meta">
+            <span class="progress-name">Units Sold (~1,000)</span>
+            <span class="progress-val">98%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width:98%; background:var(--accent); animation-delay:0.35s"></div>
+          </div>
+        </div>
+        <div class="progress-row">
+          <div class="progress-meta">
+            <span class="progress-name">Plastic Diverted (71,417 kg)</span>
+            <span class="progress-val">100%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width:100%; background:var(--accent2); animation-delay:0.5s"></div>
+          </div>
+        </div>
+        <div class="progress-row">
+          <div class="progress-meta">
+            <span class="progress-name">CO₂ Reduction (203.58 kg)</span>
+            <span class="progress-val">100%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width:100%; background:var(--accent2); animation-delay:0.65s"></div>
+          </div>
+        </div>
+        <div class="progress-row">
+          <div class="progress-meta">
+            <span class="progress-name">Funding Secured ($2,468)</span>
+            <span class="progress-val">100%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width:100%; background:var(--accent3); animation-delay:0.8s"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Monthly operational log table -->
+      <div style="margin-top: 28px;">
+        <div class="card-title" style="margin-bottom: 14px;">Quarterly Snapshot</div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Period</th>
+              <th>Revenue</th>
+              <th>Units</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Q1 · Jan–Mar</td>
+              <td>₦1.55M</td>
+              <td>195</td>
+              <td><span class="badge badge-blue">Launch</span></td>
+            </tr>
+            <tr>
+              <td>Q2 · Apr–Jun</td>
+              <td>₦2.50M</td>
+              <td>300</td>
+              <td><span class="badge badge-orange">Scaling</span></td>
+            </tr>
+            <tr>
+              <td>Q3 · Jul–Sep</td>
+              <td>₦4.95M</td>
+              <td>505</td>
+              <td><span class="badge badge-green">Peak</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Right: Environmental Impact -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Impact Metrics</div>
+          <div class="card-title-main">Environmental</div>
+        </div>
+      </div>
+
+      <div class="impact-grid" style="grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div class="impact-item">
+          <span class="impact-icon">♻️</span>
+          <span class="impact-number">71.4K</span>
+          <span class="impact-label">kg plastic<br>diverted</span>
+        </div>
+        <div class="impact-item">
+          <span class="impact-icon">🌱</span>
+          <span class="impact-number">203.6</span>
+          <span class="impact-label">kg CO₂<br>reduced</span>
+        </div>
+        <div class="impact-item">
+          <span class="impact-icon">🎨</span>
+          <span class="impact-number">~1,000</span>
+          <span class="impact-label">paint units<br>produced</span>
+        </div>
+        <div class="impact-item">
+          <span class="impact-icon">📦</span>
+          <span class="impact-number">71.4</span>
+          <span class="impact-label">kg plastic<br>per unit avg</span>
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; padding: 16px; background: var(--surface2); border-radius: 6px; border-left: 2px solid var(--accent);">
+        <div style="font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 8px;">Analyst Note</div>
+        <div style="font-size: 12px; color: var(--muted); line-height: 1.6; font-family: 'DM Sans', sans-serif;">
+          Revenue scaled 3.2× from Q1 to Q3, driven by operational systems built in the first 60 days. Plastic-to-unit conversion ratio held steady at ~71 kg/unit, indicating consistent process efficiency across scale.
+        </div>
+      </div>
+
+      <div style="margin-top: 16px; padding: 16px; background: var(--surface2); border-radius: 6px; border-left: 2px solid var(--accent2);">
+        <div style="font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 8px;">Capital Efficiency</div>
+        <div style="font-size: 12px; color: var(--muted); line-height: 1.6; font-family: 'DM Sans', sans-serif;">
+          $2,468 seed funding generated ₦9M (~$5,940) in revenue — a <strong style="color: var(--accent3);">~2.4× USD return</strong> on initial capital within the first operating year.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div>
+      <div class="footer-name">Esther Istifanus</div>
+      <div class="footer-meta">Operations Analyst · VC / Startup Focus · Zaria, Nigeria</div>
+    </div>
+    <div class="footer-right">
+      <div>Portfolio Project · P2P Operations Case Study</div>
+      <div style="margin-top: 4px;">Built with: HTML · SVG · CSS Animations</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
